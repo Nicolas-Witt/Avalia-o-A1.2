@@ -136,13 +136,14 @@
     </div>
   </div>
   <script>
+    const matricula = "445651";
     const marcas = [
-      { id: 1, nome: "Chevrolet" },
-      { id: 2, nome: "Fiat" },
-      { id: 3, nome: "Ford" },
-      { id: 4, nome: "Volkswagen" },
-      { id: 5, nome: "Honda" },
-      { id: 6, nome: "Toyota" }
+      { nome: "Chevrolet" },
+      { nome: "Fiat" },
+      { nome: "Ford" },
+      { nome: "Volkswagen" },
+      { nome: "Honda" },
+      { nome: "Toyota" }
     ];
     const modelosMock = {
       Chevrolet: [
@@ -178,26 +179,31 @@
       });
       document.getElementById("modelo").innerHTML = "<option value=''>Selecione o modelo</option>";
     }
-    async function registrarLog(acao, descricao) {
-      await fetch("https://www.piway.com.br/unoesc/api/logs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ acao, descricao })
-      });
+    async function registrarLog(api, metodo, resultado) {
+      const url = `https://www.piway.com.br/unoesc/api/inserir/log/${matricula}/${api}/${metodo}/${encodeURIComponent(resultado)}`;
+      await fetch(url);
     }
     async function carregarLogs() {
-      const resposta = await fetch("https://www.piway.com.br/unoesc/api/logs");
+      const resposta = await fetch(`https://www.piway.com.br/unoesc/api/logs/${matricula}`);
       const logs = await resposta.json();
       const lista = document.getElementById("listaLogs");
+      if (!Array.isArray(logs)) {
+        lista.innerHTML = "<p>Erro ao carregar logs. Verifique a matrícula.</p>";
+        return;
+      }
       lista.innerHTML = logs.map(log => `
         <div class='logItem'>
-          <p><strong>${log.acao}</strong> — ${log.descricao}</p>
-          <button onclick="excluirLog(${log.id})">Excluir</button>
+          <p><strong>${log.api}</strong> — ${log.metodo}</p>
+          <p>${log.resultado}</p>
+          <button onclick="excluirLog('${log.idlog}')">Excluir</button>
         </div>
       `).join('');
     }
     async function excluirLog(id) {
-      await fetch(`https://www.piway.com.br/unoesc/api/logs/${id}`, { method: "DELETE" });
+      const url = `https://www.piway.com.br/unoesc/api/excluir/log/${encodeURIComponent(id)}/aluno/${matricula}`;
+      const resposta = await fetch(url);
+      const texto = await resposta.text();
+      alert(texto);
       carregarLogs();
     }
     function abrirLogs() {
@@ -217,7 +223,8 @@
       lista.innerHTML = "<p>Carregando modelos...</p>";
       setTimeout(async () => {
         exibirModelos(modelosMock[marcaSelecionada]);
-        await registrarLog("Consulta", `Modelos da marca ${marcaSelecionada} listados.`);
+        const resultado = modelosMock[marcaSelecionada].length + " modelos encontrados";
+        await registrarLog("API HDI", "buscarModelos", resultado);
       }, 500);
     }
     function exibirModelos(modelos) {
